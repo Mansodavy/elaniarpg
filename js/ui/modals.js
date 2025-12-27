@@ -438,16 +438,23 @@ function playCombatAnimation(target, animType) {
   const combatant = document.querySelector(`.combatant.${target}`);
   if (!combatant) return;
 
-  // Retirer les classes d'animation précédentes
-  combatant.classList.remove('hit', 'attacking', 'healing', 'buffed', 'damaged');
+  const avatar = combatant.querySelector('.combatant-avatar');
+  if (!avatar) return;
 
-  // Ajouter la nouvelle classe
-  combatant.classList.add(animType === 'attack' ? 'attacking' : animType);
+  // Retirer toutes les classes d'animation
+  avatar.classList.remove('anim-attack', 'anim-hit', 'anim-heal', 'anim-buff');
+
+  // Force reflow
+  void avatar.offsetWidth;
+
+  // Ajouter la classe d'animation
+  const animClass = `anim-${animType}`;
+  avatar.classList.add(animClass);
 
   // Retirer après l'animation
   setTimeout(() => {
-    combatant.classList.remove('hit', 'attacking', 'healing', 'buffed', 'damaged');
-  }, 500);
+    avatar.classList.remove(animClass);
+  }, 600);
 }
 
 /**
@@ -462,25 +469,28 @@ function showDamageNumber(target, value, isCritical = false, type = 'damage') {
   if (!combatant) return;
 
   const avatar = combatant.querySelector('.combatant-avatar');
-  const rect = avatar.getBoundingClientRect();
-  const containerRect = combatant.getBoundingClientRect();
+  if (!avatar) return;
 
   const dmgNum = document.createElement('div');
   dmgNum.className = `damage-number ${type} ${isCritical ? 'critical' : ''}`;
   dmgNum.textContent = isCritical ? `${value}!` : value;
 
-  // Position relative au combattant
-  dmgNum.style.left = `${(rect.left - containerRect.left) + rect.width / 2}px`;
-  dmgNum.style.top = `${(rect.top - containerRect.top) + rect.height / 3}px`;
+  // Positionner au centre de l'avatar
+  dmgNum.style.position = 'absolute';
+  dmgNum.style.left = '50%';
+  dmgNum.style.top = '20%';
   dmgNum.style.transform = 'translateX(-50%)';
+  dmgNum.style.zIndex = '100';
 
   combatant.style.position = 'relative';
   combatant.appendChild(dmgNum);
 
   // Supprimer après l'animation
   setTimeout(() => {
-    dmgNum.remove();
-  }, 800);
+    if (dmgNum.parentNode) {
+      dmgNum.remove();
+    }
+  }, 900);
 }
 
 /**
