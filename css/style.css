@@ -1,0 +1,306 @@
+/* ==============================================
+   ELANIA RPG - Styles Globaux
+   ============================================== */
+
+/* Variables CSS */
+:root {
+  /* Couleurs principales */
+  --bg-primary: #1a1a2e;
+  --bg-secondary: #16213e;
+  --bg-tertiary: #0f0f1a;
+  --bg-card: #1e2a4a;
+  --bg-hover: #243152;
+
+  /* Accents */
+  --accent-gold: #d4af37;
+  --accent-gold-light: #f4d160;
+  --accent-gold-dark: #b8960c;
+
+  /* Texte */
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --text-muted: #6c6c6c;
+
+  /* États */
+  --danger: #dc3545;
+  --success: #28a745;
+  --warning: #ffc107;
+  --info: #17a2b8;
+
+  /* Couleurs de rareté */
+  --rarity-common: #9d9d9d;
+  --rarity-uncommon: #1eff00;
+  --rarity-rare: #0070dd;
+  --rarity-epic: #a335ee;
+  --rarity-legendary: #ff8000;
+  --rarity-mythic: #e6cc80;
+
+  /* Typographie */
+  --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --font-display: Georgia, 'Times New Roman', serif;
+
+  /* Espacement */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+
+  /* Bordures */
+  --border-radius: 8px;
+  --border-color: #3a4a6b;
+
+  /* Ombres */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+}
+
+/* Reset & Base */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-main);
+  background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-primary) 50%, var(--bg-secondary) 100%);
+  color: var(--text-primary);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* Liens */
+a {
+  color: var(--accent-gold);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--accent-gold-light);
+}
+
+/* Titres */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  color: var(--accent-gold);
+  margin-bottom: var(--spacing-md);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+h1 { font-size: 2.5rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.5rem; }
+h4 { font-size: 1.25rem; }
+
+/* Utilitaires */
+.text-center { text-align: center; }
+.text-gold { color: var(--accent-gold); }
+.text-muted { color: var(--text-muted); }
+
+.mt-1 { margin-top: var(--spacing-sm); }
+.mt-2 { margin-top: var(--spacing-md); }
+.mt-3 { margin-top: var(--spacing-lg); }
+.mb-1 { margin-bottom: var(--spacing-sm); }
+.mb-2 { margin-bottom: var(--spacing-md); }
+.mb-3 { margin-bottom: var(--spacing-lg); }
+
+/* Container */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-md);
+}
+
+/* Grille flexible */
+.flex { display: flex; }
+.flex-center { justify-content: center; align-items: center; }
+.flex-between { justify-content: space-between; }
+.flex-column { flex-direction: column; }
+.gap-1 { gap: var(--spacing-sm); }
+.gap-2 { gap: var(--spacing-md); }
+.gap-3 { gap: var(--spacing-lg); }
+
+/* Scrollbar personnalisée */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-gold-dark);
+}
+
+/* Écran titre spécifique */
+.title-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: var(--spacing-xl);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(212, 175, 55, 0.1) 0%, transparent 50%),
+    linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-primary) 50%, var(--bg-secondary) 100%);
+}
+
+.game-logo {
+  font-family: var(--font-display);
+  font-size: 4rem;
+  color: var(--accent-gold);
+  text-shadow:
+    0 0 10px rgba(212, 175, 55, 0.5),
+    0 4px 8px rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.3em;
+  margin-bottom: var(--spacing-sm);
+  animation: glow 3s ease-in-out infinite;
+}
+
+.game-subtitle {
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.2em;
+  margin-bottom: var(--spacing-xl);
+}
+
+@keyframes glow {
+  0%, 100% { text-shadow: 0 0 10px rgba(212, 175, 55, 0.5), 0 4px 8px rgba(0, 0, 0, 0.5); }
+  50% { text-shadow: 0 0 20px rgba(212, 175, 55, 0.8), 0 4px 8px rgba(0, 0, 0, 0.5); }
+}
+
+/* Formulaire de création */
+.creation-form {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-xl);
+  width: 100%;
+  max-width: 500px;
+  box-shadow: var(--shadow-lg);
+}
+
+.form-group {
+  margin-bottom: var(--spacing-lg);
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: var(--spacing-sm);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.form-group input[type="text"] {
+  width: 100%;
+  padding: var(--spacing-md);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  color: var(--text-primary);
+  font-size: 1rem;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-group input[type="text"]:focus {
+  outline: none;
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+}
+
+.form-group input[type="text"]::placeholder {
+  color: var(--text-muted);
+}
+
+/* Options d'origine */
+.origin-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+}
+
+.origin-option {
+  position: relative;
+}
+
+.origin-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.origin-option label {
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-md);
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-transform: none;
+}
+
+.origin-option label:hover {
+  border-color: var(--accent-gold-dark);
+  background: var(--bg-hover);
+}
+
+.origin-option input[type="radio"]:checked + label {
+  border-color: var(--accent-gold);
+  background: rgba(212, 175, 55, 0.1);
+}
+
+.origin-name {
+  font-weight: bold;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.origin-bonus {
+  font-size: 0.85rem;
+  color: var(--success);
+}
+
+/* Responsive mobile */
+@media (max-width: 480px) {
+  .game-logo {
+    font-size: 2.5rem;
+    letter-spacing: 0.2em;
+  }
+
+  .game-subtitle {
+    font-size: 1rem;
+  }
+
+  .creation-form {
+    padding: var(--spacing-lg);
+  }
+
+  .origin-options {
+    grid-template-columns: 1fr;
+  }
+}

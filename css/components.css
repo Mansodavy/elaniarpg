@@ -1,0 +1,476 @@
+/* ==============================================
+   ELANIA RPG - Composants UI
+   ============================================== */
+
+/* ==============================================
+   BOUTONS
+   ============================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-family: var(--font-main);
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Bouton principal (doré) */
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-dark) 100%);
+  color: var(--bg-tertiary);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--accent-gold-light) 0%, var(--accent-gold) 100%);
+  box-shadow: 0 6px 16px rgba(212, 175, 55, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+}
+
+/* Bouton secondaire */
+.btn-secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--accent-gold-dark);
+}
+
+/* Bouton danger */
+.btn-danger {
+  background: var(--danger);
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #c82333;
+}
+
+/* Bouton succès */
+.btn-success {
+  background: var(--success);
+  color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+  background: #218838;
+}
+
+/* Tailles de boutons */
+.btn-sm {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: 0.85rem;
+}
+
+.btn-lg {
+  padding: var(--spacing-lg) var(--spacing-xl);
+  font-size: 1.1rem;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+/* ==============================================
+   CARDS
+   ============================================== */
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-normal);
+}
+
+.card-clickable {
+  cursor: pointer;
+}
+
+.card-clickable:hover {
+  border-color: var(--accent-gold-dark);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.card-title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  color: var(--accent-gold);
+  margin: 0;
+}
+
+.card-body {
+  color: var(--text-secondary);
+}
+
+.card-footer {
+  padding-top: var(--spacing-md);
+  margin-top: var(--spacing-md);
+  border-top: 1px solid var(--border-color);
+}
+
+/* ==============================================
+   MODALS
+   ============================================== */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--transition-normal);
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  transform: scale(0.9);
+  transition: transform var(--transition-normal);
+}
+
+.modal-overlay.active .modal {
+  transform: scale(1);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--accent-gold);
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: var(--spacing-sm);
+  line-height: 1;
+  transition: color var(--transition-fast);
+}
+
+.modal-close:hover {
+  color: var(--danger);
+}
+
+.modal-body {
+  padding: var(--spacing-lg);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  border-top: 1px solid var(--border-color);
+}
+
+/* ==============================================
+   BARRES DE PROGRESSION
+   ============================================== */
+
+.progress-bar {
+  width: 100%;
+  height: 20px;
+  background: var(--bg-tertiary);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-gold-dark), var(--accent-gold));
+  transition: width var(--transition-normal);
+  position: relative;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    transparent 100%
+  );
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Barre de vie */
+.health-bar .progress-fill {
+  background: linear-gradient(90deg, #c0392b, #e74c3c);
+}
+
+/* Barre d'expérience */
+.xp-bar .progress-fill {
+  background: linear-gradient(90deg, #2980b9, #3498db);
+}
+
+/* ==============================================
+   BADGES & TAGS
+   ============================================== */
+
+.badge {
+  display: inline-block;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.badge-level {
+  background: var(--accent-gold);
+  color: var(--bg-tertiary);
+}
+
+/* Badges de rareté */
+.badge-common { background: var(--rarity-common); color: white; }
+.badge-uncommon { background: var(--rarity-uncommon); color: var(--bg-tertiary); }
+.badge-rare { background: var(--rarity-rare); color: white; }
+.badge-epic { background: var(--rarity-epic); color: white; }
+.badge-legendary { background: var(--rarity-legendary); color: var(--bg-tertiary); }
+.badge-mythic { background: var(--rarity-mythic); color: var(--bg-tertiary); }
+
+/* ==============================================
+   STATS DISPLAY
+   ============================================== */
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm) 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stat-row:last-child {
+  border-bottom: none;
+}
+
+.stat-name {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.stat-value {
+  color: var(--text-primary);
+  font-weight: bold;
+}
+
+.stat-value.positive {
+  color: var(--success);
+}
+
+.stat-value.negative {
+  color: var(--danger);
+}
+
+/* ==============================================
+   TOOLTIPS
+   ============================================== */
+
+.tooltip {
+  position: absolute;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-md);
+  z-index: 100;
+  box-shadow: var(--shadow-lg);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  min-width: 200px;
+  max-width: 300px;
+}
+
+.tooltip.visible {
+  opacity: 1;
+}
+
+.tooltip-title {
+  font-weight: bold;
+  margin-bottom: var(--spacing-sm);
+}
+
+.tooltip-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* ==============================================
+   NOTIFICATIONS / TOASTS
+   ============================================== */
+
+.toast-container {
+  position: fixed;
+  top: var(--spacing-lg);
+  right: var(--spacing-lg);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.toast {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-md) var(--spacing-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  animation: slideIn 0.3s ease;
+  min-width: 250px;
+}
+
+.toast.success { border-left: 4px solid var(--success); }
+.toast.error { border-left: 4px solid var(--danger); }
+.toast.warning { border-left: 4px solid var(--warning); }
+.toast.info { border-left: 4px solid var(--info); }
+
+.toast-icon {
+  font-size: 1.25rem;
+}
+
+.toast-message {
+  flex: 1;
+  color: var(--text-primary);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.toast.hiding {
+  animation: slideOut 0.3s ease forwards;
+}
+
+/* ==============================================
+   RESPONSIVE
+   ============================================== */
+
+@media (max-width: 480px) {
+  .modal {
+    width: 95%;
+    max-height: 85vh;
+  }
+
+  .btn {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .toast-container {
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+    left: var(--spacing-sm);
+  }
+
+  .toast {
+    min-width: auto;
+  }
+}

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Elania - Aventure</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/game.css">
+</head>
+<body>
+  <div class="game-container">
+    <!-- Header -->
+    <header class="game-header">
+      <span class="logo">ELANIA</span>
+      <div class="header-info">
+        <div class="gold-display">
+          <span class="gold-icon">💰</span>
+          <span id="gold-amount">0</span>
+        </div>
+        <button class="settings-btn" onclick="openSettings()" title="Paramètres">⚙️</button>
+      </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="game-nav">
+      <button class="nav-btn active" data-screen="character">Personnage</button>
+      <button class="nav-btn" data-screen="map">Carte</button>
+      <button class="nav-btn" data-screen="arena">Arène</button>
+      <button class="nav-btn" data-screen="inventory">Inventaire</button>
+    </nav>
+
+    <!-- Contenu principal -->
+    <main class="game-content">
+      <!-- Écran Personnage -->
+      <section class="screen active" id="screen-character">
+        <div class="character-screen">
+          <!-- Stats Section -->
+          <div class="stats-section">
+            <div class="card">
+              <div class="character-header">
+                <div class="character-avatar">⚔️</div>
+                <div class="character-info">
+                  <h2 id="char-name">Héros</h2>
+                  <div class="character-level">
+                    <span class="level-badge" id="char-level">Niveau 1</span>
+                    <span class="character-origin" id="char-origin">Paysan</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Barres de ressources -->
+              <div class="resource-bars">
+                <div class="resource-bar">
+                  <div class="resource-label">
+                    <span class="resource-name">Points de vie</span>
+                    <span class="resource-value" id="hp-text">100/100</span>
+                  </div>
+                  <div class="progress-bar health-bar">
+                    <div class="progress-fill" id="hp-fill" style="width: 100%"></div>
+                  </div>
+                </div>
+
+                <div class="resource-bar">
+                  <div class="resource-label">
+                    <span class="resource-name">Expérience</span>
+                    <span class="resource-value" id="xp-text">0/100</span>
+                  </div>
+                  <div class="progress-bar xp-bar">
+                    <div class="progress-fill" id="xp-fill" style="width: 0%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Points de stats disponibles -->
+            <div class="stat-points-available" id="stat-points-container" style="display: none;">
+              Points de stats disponibles: <span id="stat-points">0</span>
+            </div>
+
+            <!-- Stats principales -->
+            <div class="card">
+              <div class="card-header">
+                <h4 class="card-title">Statistiques</h4>
+              </div>
+              <div class="main-stats">
+                <div class="stat-box">
+                  <span class="stat-name">Force</span>
+                  <span class="stat-value" id="stat-strength">5</span>
+                  <span class="stat-base" id="stat-strength-base">(5)</span>
+                  <div class="stat-controls">
+                    <button class="stat-btn stat-add-btn" data-stat="strength" disabled>+</button>
+                  </div>
+                </div>
+
+                <div class="stat-box">
+                  <span class="stat-name">Agilité</span>
+                  <span class="stat-value" id="stat-agility">5</span>
+                  <span class="stat-base" id="stat-agility-base">(5)</span>
+                  <div class="stat-controls">
+                    <button class="stat-btn stat-add-btn" data-stat="agility" disabled>+</button>
+                  </div>
+                </div>
+
+                <div class="stat-box">
+                  <span class="stat-name">Intelligence</span>
+                  <span class="stat-value" id="stat-intelligence">5</span>
+                  <span class="stat-base" id="stat-intelligence-base">(5)</span>
+                  <div class="stat-controls">
+                    <button class="stat-btn stat-add-btn" data-stat="intelligence" disabled>+</button>
+                  </div>
+                </div>
+
+                <div class="stat-box">
+                  <span class="stat-name">Endurance</span>
+                  <span class="stat-value" id="stat-endurance">5</span>
+                  <span class="stat-base" id="stat-endurance-base">(5)</span>
+                  <div class="stat-controls">
+                    <button class="stat-btn stat-add-btn" data-stat="endurance" disabled>+</button>
+                  </div>
+                </div>
+
+                <div class="stat-box">
+                  <span class="stat-name">Chance</span>
+                  <span class="stat-value" id="stat-luck">5</span>
+                  <span class="stat-base" id="stat-luck-base">(5)</span>
+                  <div class="stat-controls">
+                    <button class="stat-btn stat-add-btn" data-stat="luck" disabled>+</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Stats dérivées -->
+            <div class="card">
+              <div class="card-header">
+                <h4 class="card-title">Combat</h4>
+              </div>
+              <div class="derived-stats">
+                <div class="derived-stat">
+                  <span class="stat-name">Attaque</span>
+                  <span class="stat-value" id="derived-attack">10</span>
+                </div>
+                <div class="derived-stat">
+                  <span class="stat-name">Magie</span>
+                  <span class="stat-value" id="derived-magic">10</span>
+                </div>
+                <div class="derived-stat">
+                  <span class="stat-name">Défense</span>
+                  <span class="stat-value" id="derived-defense">7</span>
+                </div>
+                <div class="derived-stat">
+                  <span class="stat-name">Esquive</span>
+                  <span class="stat-value" id="derived-dodge">2.5%</span>
+                </div>
+                <div class="derived-stat">
+                  <span class="stat-name">Critique</span>
+                  <span class="stat-value" id="derived-critical">3.0%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Equipment Section -->
+          <div class="equipment-section">
+            <div class="card">
+              <div class="card-header">
+                <h4 class="card-title">Équipement</h4>
+              </div>
+              <div class="equipment-grid">
+                <div class="equipment-slot" id="slot-head">
+                  <span class="slot-label">Tête</span>
+                  <span class="slot-icon">🪖</span>
+                </div>
+                <div class="equipment-slot" id="slot-amulet">
+                  <span class="slot-label">Amulette</span>
+                  <span class="slot-icon">📿</span>
+                </div>
+                <div class="equipment-slot" id="slot-chest">
+                  <span class="slot-label">Torse</span>
+                  <span class="slot-icon">🛡️</span>
+                </div>
+                <div class="equipment-slot" id="slot-mainHand">
+                  <span class="slot-label">Arme</span>
+                  <span class="slot-icon">⚔️</span>
+                </div>
+                <div class="equipment-slot" id="slot-hands">
+                  <span class="slot-label">Mains</span>
+                  <span class="slot-icon">🧤</span>
+                </div>
+                <div class="equipment-slot" id="slot-offHand">
+                  <span class="slot-label">Bouclier</span>
+                  <span class="slot-icon">🛡️</span>
+                </div>
+                <div class="equipment-slot" id="slot-legs">
+                  <span class="slot-label">Jambes</span>
+                  <span class="slot-icon">👖</span>
+                </div>
+                <div class="equipment-slot" id="slot-ring1">
+                  <span class="slot-label">Anneau</span>
+                  <span class="slot-icon">💍</span>
+                </div>
+                <div class="equipment-slot" id="slot-feet">
+                  <span class="slot-label">Pieds</span>
+                  <span class="slot-icon">👢</span>
+                </div>
+                <div class="equipment-slot" id="slot-ring2">
+                  <span class="slot-label">Anneau</span>
+                  <span class="slot-icon">💍</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Écran Carte -->
+      <section class="screen" id="screen-map">
+        <div class="map-screen">
+          <div class="card mb-3">
+            <h3 class="card-title">Zones d'exploration</h3>
+            <p class="text-muted">Partez en expédition pour combattre des monstres et obtenir du butin.</p>
+          </div>
+
+          <div class="zones-list" id="zones-list">
+            <!-- Généré par JavaScript -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Écran Arène -->
+      <section class="screen" id="screen-arena">
+        <div class="arena-screen">
+          <div class="card mb-3">
+            <div class="arena-header">
+              <div>
+                <h3 class="card-title">Arène PvP</h3>
+                <p class="text-muted">Affrontez d'autres combattants pour grimper dans le classement.</p>
+              </div>
+              <div class="arena-info">
+                <div class="arena-points">
+                  <span>🏆</span>
+                  <span id="arena-points">0</span> pts
+                </div>
+                <div class="fights-remaining">
+                  Combats: <span id="arena-fights">10/10</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="opponents-list" id="opponents-list">
+            <!-- Généré par JavaScript -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Écran Inventaire -->
+      <section class="screen" id="screen-inventory">
+        <div class="inventory-screen">
+          <div class="inventory-header">
+            <div>
+              <h3>Inventaire</h3>
+              <span class="text-muted" id="inventory-count">0/20</span>
+            </div>
+            <div class="inventory-filters">
+              <button class="filter-btn active" data-filter="all">Tout</button>
+              <button class="filter-btn" data-filter="weapon">Armes</button>
+              <button class="filter-btn" data-filter="armor">Armures</button>
+              <button class="filter-btn" data-filter="accessory">Accessoires</button>
+            </div>
+          </div>
+
+          <div class="inventory-grid" id="inventory-grid">
+            <!-- Généré par JavaScript -->
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modals -->
+  <!-- Modal Item -->
+  <div class="modal-overlay" id="item-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="item-modal-title">Item</h3>
+        <button class="modal-close" onclick="closeModal('item-modal')">&times;</button>
+      </div>
+      <div class="modal-body" id="item-modal-body">
+        <!-- Contenu généré -->
+      </div>
+      <div class="modal-footer" id="item-modal-footer">
+        <!-- Actions générées -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Combat -->
+  <div class="modal-overlay" id="combat-modal">
+    <div class="modal combat-modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Combat</h3>
+      </div>
+      <div class="modal-body">
+        <div class="combat-arena">
+          <div class="combatant player">
+            <div class="combatant-avatar">⚔️</div>
+            <div class="combatant-name" id="combat-player-name">Joueur</div>
+            <div class="combatant-level" id="combat-player-level">Niv. 1</div>
+            <div class="combatant-health">
+              <div class="combatant-health-fill" id="combat-player-hp-fill"></div>
+              <span class="combatant-health-text" id="combat-player-hp-text">100/100</span>
+            </div>
+          </div>
+
+          <div class="vs-separator">VS</div>
+
+          <div class="combatant enemy">
+            <div class="combatant-avatar" id="combat-enemy-icon">👹</div>
+            <div class="combatant-name" id="combat-enemy-name">Monstre</div>
+            <div class="combatant-level" id="combat-enemy-level">Niv. 1</div>
+            <div class="combatant-health">
+              <div class="combatant-health-fill" id="combat-enemy-hp-fill"></div>
+              <span class="combatant-health-text" id="combat-enemy-hp-text">100/100</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="combat-log" id="combat-log">
+          <!-- Log du combat -->
+        </div>
+
+        <div class="combat-result" id="combat-result" style="display: none;">
+          <!-- Résultat du combat -->
+        </div>
+      </div>
+      <div class="modal-footer" id="combat-actions">
+        <button class="btn btn-primary" onclick="animateCombat()">Lancer le combat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Confirmation -->
+  <div class="modal-overlay" id="confirm-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="confirm-modal-title">Confirmation</h3>
+        <button class="modal-close" onclick="closeModal('confirm-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirm-modal-message">Êtes-vous sûr ?</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="cancelAction()">Annuler</button>
+        <button class="btn btn-danger" onclick="confirmAction()">Confirmer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/utils/helpers.js"></script>
+  <script src="js/utils/storage.js"></script>
+  <script src="js/data/items.js"></script>
+  <script src="js/data/monsters.js"></script>
+  <script src="js/data/zones.js"></script>
+  <script src="js/data/sets.js"></script>
+  <script src="js/systems/character.js"></script>
+  <script src="js/systems/inventory.js"></script>
+  <script src="js/systems/loot.js"></script>
+  <script src="js/systems/combat.js"></script>
+  <script src="js/systems/expedition.js"></script>
+  <script src="js/systems/arena.js"></script>
+  <script src="js/ui/screens.js"></script>
+  <script src="js/ui/modals.js"></script>
+  <script src="js/ui/animations.js"></script>
+  <script src="js/ui/tooltips.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

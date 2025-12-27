@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Elania - RPG Fantasy</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+  <div class="title-screen">
+    <h1 class="game-logo">ELANIA</h1>
+    <p class="game-subtitle">Forgez votre destinée</p>
+
+    <form class="creation-form" id="creation-form">
+      <h3 class="text-center mb-3">Création de personnage</h3>
+
+      <div class="form-group">
+        <label for="character-name">Nom du héros</label>
+        <input
+          type="text"
+          id="character-name"
+          name="characterName"
+          placeholder="Entrez votre nom..."
+          maxlength="20"
+          required
+          autocomplete="off"
+        >
+      </div>
+
+      <div class="form-group">
+        <label>Origine</label>
+        <div class="origin-options" id="origin-options">
+          <!-- Les options seront générées par JavaScript -->
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg">
+        Commencer l'aventure
+      </button>
+    </form>
+
+    <p class="text-muted mt-3" id="existing-char-info" style="display: none;">
+      <a href="game.html">Continuer avec votre personnage existant</a>
+    </p>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/utils/helpers.js"></script>
+  <script src="js/utils/storage.js"></script>
+  <script src="js/data/items.js"></script>
+  <script src="js/data/sets.js"></script>
+  <script src="js/systems/character.js"></script>
+  <script src="js/systems/inventory.js"></script>
+  <script src="js/systems/loot.js"></script>
+
+  <script>
+    // Générer les options d'origine
+    function renderOriginOptions() {
+      const container = document.getElementById('origin-options');
+      let html = '';
+
+      for (const [id, origin] of Object.entries(ORIGINS)) {
+        html += `
+          <div class="origin-option">
+            <input
+              type="radio"
+              id="origin-${id}"
+              name="origin"
+              value="${id}"
+              ${id === 'peasant' ? 'checked' : ''}
+            >
+            <label for="origin-${id}">
+              <span class="origin-icon">${origin.icon}</span>
+              <span class="origin-name">${origin.name}</span>
+              <span class="origin-bonus">${origin.bonusText}</span>
+            </label>
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+    }
+
+    // Vérifier si un personnage existe déjà
+    function checkExistingCharacter() {
+      if (hasCharacter()) {
+        document.getElementById('existing-char-info').style.display = 'block';
+      }
+    }
+
+    // Gérer la soumission du formulaire
+    function handleFormSubmit(e) {
+      e.preventDefault();
+
+      const name = document.getElementById('character-name').value.trim();
+      const origin = document.querySelector('input[name="origin"]:checked')?.value || 'peasant';
+
+      if (!name) {
+        alert('Veuillez entrer un nom pour votre personnage.');
+        return;
+      }
+
+      if (name.length < 2) {
+        alert('Le nom doit contenir au moins 2 caractères.');
+        return;
+      }
+
+      // Créer le personnage
+      const character = createCharacter(name, origin);
+      saveCharacter(character);
+
+      // Initialiser l'inventaire vide
+      Storage.saveInventory([]);
+      Storage.saveEquipment({});
+
+      // Donner un item de départ basé sur l'origine
+      const starterItems = {
+        peasant: { slot: 'chest', name: 'Tunique de paysan' },
+        soldier: { slot: 'mainHand', name: 'Épée rouillée' },
+        thief: { slot: 'mainHand', name: 'Dague émoussée' },
+        scholar: { slot: 'mainHand', name: 'Bâton de novice' }
+      };
+
+      const starter = starterItems[origin];
+      if (starter) {
+        const item = generateItem(starter.slot, 1, 'common');
+        if (item) {
+          addToInventory(item);
+        }
+      }
+
+      // Rediriger vers le jeu
+      window.location.href = 'game.html';
+    }
+
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', () => {
+      renderOriginOptions();
+      checkExistingCharacter();
+
+      document.getElementById('creation-form').addEventListener('submit', handleFormSubmit);
+    });
+  </script>
+</body>
+</html>
