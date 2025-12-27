@@ -178,30 +178,42 @@ function renderCombatUI() {
     return;
   }
 
-  // Si c'est le tour de l'ennemi, exécuter automatiquement
+  // Si c'est le tour de l'ennemi, exécuter INSTANTANÉMENT
   if (combat.phase === 'enemy') {
-    actionsDiv.innerHTML = `<div class="enemy-turn-indicator">Tour de l'ennemi...</div>`;
+    actionsDiv.innerHTML = `<div class="enemy-turn-indicator">💥</div>`;
+
+    // Délai ultra court
     setTimeout(() => {
       const prevPlayerHp = combat.player.currentHp;
       const result = executeEnemyTurn();
 
-      // Animer l'attaque ennemie
       if (result.success && result.continuesCombat) {
+        const damage = prevPlayerHp - getCurrentCombatState().player.currentHp;
+
+        // Animations simultanées
         playCombatAnimation('enemy', 'attack');
-        setTimeout(() => {
-          const damage = prevPlayerHp - getCurrentCombatState().player.currentHp;
-          if (damage > 0) {
+
+        if (damage > 0) {
+          // Impact immédiat
+          setTimeout(() => {
             playCombatAnimation('player', 'hit');
             showDamageNumber('player', damage, result.enemyAttack?.isCritical);
-          } else {
-            showDamageNumber('player', 'Esquive!', false, 'miss');
-          }
-          renderCombatUI();
-        }, 200);
+            screenShake(damage > 20 ? 'heavy' : 'light');
+            updateCombatBars(getCurrentCombatState());
+          }, 100);
+        } else {
+          showDamageNumber('player', 'ESQUIVE!', false, 'miss');
+        }
+
+        // Retour au joueur rapide
+        setTimeout(() => {
+          renderCombatLog(getCurrentCombatState().log);
+          renderSkillButtons(getCurrentCombatState().player.skillState);
+        }, 250);
       } else {
         renderCombatUI();
       }
-    }, 600);
+    }, 100);
     return;
   }
 
@@ -369,36 +381,44 @@ function handleSkillClick(skillId) {
     return;
   }
 
-  // Animer selon le type de compétence
   const skill = result.playerAction?.skill;
 
   if (skill) {
     if (skill.type === 'damage' || skill.type === 'magic') {
-      // Animation d'attaque
+      // ATTAQUE RAPIDE
       playCombatAnimation('player', 'attack');
+
+      // Impact quasi-instantané
       setTimeout(() => {
         const damage = prevEnemyHp - getCurrentCombatState().enemy.currentHp;
         if (damage > 0) {
           playCombatAnimation('enemy', 'hit');
-          showDamageNumber('enemy', damage, result.playerAction.damage >= prevEnemyHp * 0.3);
+          showDamageNumber('enemy', damage, damage > 15);
+          screenShake(damage > 20 ? 'heavy' : 'light');
+
           if (skill.type === 'magic') {
             showSpellEffect('enemy', skill.id);
           }
         }
         updateCombatBars(getCurrentCombatState());
+      }, 80);
+
+      // Enchaîner vite
+      setTimeout(() => {
         renderCombatLog(getCurrentCombatState().log);
         continueAfterPlayerAction();
-      }, 250);
+      }, 180);
       return;
+
     } else if (skill.type === 'heal' || skill.type === 'consumable') {
-      // Animation de soin
       playCombatAnimation('player', 'heal');
       const healing = getCurrentCombatState().player.currentHp - prevPlayerHp;
       showDamageNumber('player', `+${healing}`, false, 'heal');
       showHealParticles('player');
+
     } else if (skill.type === 'buff') {
-      // Animation de buff
       playCombatAnimation('player', 'buff');
+      flashScreen('buff');
     }
   }
 
@@ -414,19 +434,56 @@ function continueAfterPlayerAction() {
   const combat = getCurrentCombatState();
 
   if (combat.isFinished) {
-    showCombatResult({
-      victory: combat.victory,
-      playerHpRemaining: combat.player.currentHp,
-      enemyHpRemaining: combat.enemy.currentHp,
-      rewards: combat.options?.rewards
-    });
+    // Petit délai pour voir le dernier coup
+    setTimeout(() => {
+      showCombatResult({
+        victory: combat.victory,
+        playerHpRemaining: combat.player.currentHp,
+        enemyHpRemaining: combat.enemy.currentHp,
+        rewards: combat.options?.rewards
+      });
+    }, 300);
     return;
   }
 
-  // Passer au tour ennemi après un court délai
+  // Tour ennemi RAPIDE
   setTimeout(() => {
     renderCombatUI();
-  }, 400);
+  }, 150);
+}
+
+/**
+ * Secoue l'écran de combat
+ * @param {string} intensity - 'light' ou 'heavy'
+ */
+function screenShake(intensity = 'light') {
+  const arena = document.querySelector('.combat-arena');
+  if (!arena) return;
+
+  arena.classList.remove('shake-light', 'shake-heavy');
+  void arena.offsetWidth;
+  arena.classList.add(`shake-${intensity}`);
+
+  setTimeout(() => {
+    arena.classList.remove('shake-light', 'shake-heavy');
+  }, 300);
+}
+
+/**
+ * Flash l'écran
+ * @param {string} type - 'damage', 'heal', 'buff'
+ */
+function flashScreen(type = 'damage') {
+  const arena = document.querySelector('.combat-arena');
+  if (!arena) return;
+
+  arena.classList.remove('flash-damage', 'flash-heal', 'flash-buff');
+  void arena.offsetWidth;
+  arena.classList.add(`flash-${type}`);
+
+  setTimeout(() => {
+    arena.classList.remove('flash-damage', 'flash-heal', 'flash-buff');
+  }, 200);
 }
 
 /**
@@ -454,7 +511,7 @@ function playCombatAnimation(target, animType) {
   // Retirer après l'animation
   setTimeout(() => {
     avatar.classList.remove(animClass);
-  }, 600);
+  }, 400);
 }
 
 /**
@@ -754,3 +811,5 @@ window.playCombatAnimation = playCombatAnimation;
 window.showDamageNumber = showDamageNumber;
 window.showSpellEffect = showSpellEffect;
 window.showHealParticles = showHealParticles;
+window.screenShake = screenShake;
+window.flashScreen = flashScreen;
