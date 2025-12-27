@@ -3,6 +3,11 @@
    ============================================== */
 
 /**
+ * État global du combat interactif
+ */
+let currentInteractiveCombat = null;
+
+/**
  * Crée un combattant à partir du personnage joueur
  * @param {Object} character - Le personnage
  * @returns {Object} Combattant formaté
@@ -16,7 +21,8 @@ function createPlayerCombatant(character) {
     level: character.level,
     stats: { ...character.derivedStats },
     currentHp: character.currentHp,
-    maxHp: character.derivedStats.maxHp
+    maxHp: character.derivedStats.maxHp,
+    skillState: createCombatSkillState(character)
   };
 }
 
@@ -294,6 +300,277 @@ function prepareCombatAnimation(combatResult) {
   return actions;
 }
 
+/**
+ * Initialise un combat interactif
+ * @param {Object} player - Combattant joueur
+ * @param {Object} enemy - Combattant ennemi
+ * @param {Object} options - Options du combat
+ * @returns {Object} État du combat
+ */
+function initInteractiveCombat(player, enemy, options = {}) {
+  currentInteractiveCombat = {
+    player: player,
+    enemy: enemy,
+    turn: 1,
+    phase: 'player', // 'player' ou 'enemy'
+    log: [],
+    isFinished: false,
+    victory: null,
+    options: options,
+    enemyEffects: [] // Effets sur l'ennemi
+  };
+
+  // Déterminer l'initiative
+  const playerInit = player.stats.agility + Helpers.randomInt(1, 10);
+  const enemyInit = (enemy.stats?.agility || enemy.baseStats?.agility || 5) + Helpers.randomInt(1, 10);
+
+  if (playerInit >= enemyInit) {
+    currentInteractiveCombat.phase = 'player';
+    addCombatLog('info', `Le combat commence ! ${player.name} a l'initiative.`);
+  } else {
+    currentInteractiveCombat.phase = 'enemy';
+    addCombatLog('info', `Le combat commence ! ${enemy.name} a l'initiative.`);
+  }
+
+  addCombatLog('turn', `--- Tour ${currentInteractiveCombat.turn} ---`);
+
+  return currentInteractiveCombat;
+}
+
+/**
+ * Ajoute une entrée au log de combat
+ * @param {string} type - Type d'entrée
+ * @param {string} message - Message
+ * @param {Object} data - Données supplémentaires
+ */
+function addCombatLog(type, message, data = {}) {
+  if (!currentInteractiveCombat) return;
+
+  currentInteractiveCombat.log.push({
+    type,
+    message,
+    ...data
+  });
+}
+
+/**
+ * Exécute l'action du joueur
+ * @param {string} skillId - ID de la compétence utilisée
+ * @returns {Object} Résultat de l'action
+ */
+function executePlayerAction(skillId) {
+  if (!currentInteractiveCombat || currentInteractiveCombat.phase !== 'player') {
+    return { success: false, message: 'Ce n\'est pas votre tour' };
+  }
+
+  const combat = currentInteractiveCombat;
+  const player = combat.player;
+  const enemy = combat.enemy;
+
+  // Utiliser la compétence
+  const skillResult = useSkill(player.skillState, skillId, player, enemy);
+
+  if (!skillResult.success) {
+    return skillResult;
+  }
+
+  // Appliquer les dégâts
+  if (skillResult.damage > 0) {
+    // Appliquer le boost de dégâts
+    const damageModifier = getDamageModifier(player.skillState);
+    const finalDamage = Math.floor(skillResult.damage * damageModifier);
+
+    enemy.currentHp = Math.max(0, enemy.currentHp - finalDamage);
+
+    addCombatLog('player-attack', skillResult.message, {
+      damage: finalDamage,
+      isCritical: skillResult.damage >= player.stats.attack * 1.8,
+      defenderHp: enemy.currentHp,
+      defenderMaxHp: enemy.maxHp
+    });
+  }
+
+  // Appliquer le soin
+  if (skillResult.healing > 0) {
+    player.currentHp = Math.min(player.maxHp, player.currentHp + skillResult.healing);
+
+    addCombatLog('player-heal', skillResult.message, {
+      healing: skillResult.healing,
+      playerHp: player.currentHp,
+      playerMaxHp: player.maxHp
+    });
+  }
+
+  // Appliquer les effets de buff
+  if (skillResult.skill.type === 'buff' && skillResult.effects.length > 0) {
+    addCombatLog('player-buff', skillResult.message, {
+      effects: skillResult.effects
+    });
+  }
+
+  // Appliquer les effets sur la cible
+  if (skillResult.targetEffects) {
+    combat.enemyEffects.push(...skillResult.targetEffects);
+  }
+
+  // Vérifier si l'ennemi est mort
+  if (enemy.currentHp <= 0) {
+    return finishCombat(true);
+  }
+
+  // Passer au tour de l'ennemi
+  combat.phase = 'enemy';
+
+  return {
+    success: true,
+    continuesCombat: true,
+    playerAction: skillResult
+  };
+}
+
+/**
+ * Exécute le tour de l'ennemi
+ * @returns {Object} Résultat de l'action ennemie
+ */
+function executeEnemyTurn() {
+  if (!currentInteractiveCombat || currentInteractiveCombat.phase !== 'enemy') {
+    return { success: false, message: 'Ce n\'est pas le tour de l\'ennemi' };
+  }
+
+  const combat = currentInteractiveCombat;
+  const player = combat.player;
+  const enemy = combat.enemy;
+
+  // Appliquer les effets de DoT sur l'ennemi
+  let dotDamage = 0;
+  combat.enemyEffects = combat.enemyEffects.filter(effect => {
+    if (effect.type === 'burn') {
+      dotDamage += effect.value;
+    }
+    effect.remainingDuration--;
+    return effect.remainingDuration > 0;
+  });
+
+  if (dotDamage > 0) {
+    enemy.currentHp = Math.max(0, enemy.currentHp - dotDamage);
+    addCombatLog('dot', `${enemy.name} subit ${dotDamage} dégâts de brûlure !`, {
+      damage: dotDamage,
+      defenderHp: enemy.currentHp,
+      defenderMaxHp: enemy.maxHp
+    });
+
+    if (enemy.currentHp <= 0) {
+      return finishCombat(true);
+    }
+  }
+
+  // L'ennemi attaque
+  const attackResult = calculateAttackDamage(enemy, player);
+
+  if (attackResult.isDodged) {
+    addCombatLog('player-dodge', `${player.name} esquive l'attaque de ${enemy.name} !`, {
+      isDodge: true
+    });
+  } else {
+    // Appliquer la réduction de dégâts
+    const damageReduction = getDamageReduction(player.skillState);
+    const finalDamage = Math.max(1, Math.floor(attackResult.damage * (1 - damageReduction)));
+
+    player.currentHp = Math.max(0, player.currentHp - finalDamage);
+
+    let message = `${enemy.name} inflige ${finalDamage} dégâts à ${player.name}`;
+    if (attackResult.isCritical) {
+      message += ' (CRITIQUE !)';
+    }
+    if (damageReduction > 0) {
+      message += ` (${Math.floor(damageReduction * 100)}% bloqué)`;
+    }
+    message += ` [${player.currentHp}/${player.maxHp} PV]`;
+
+    addCombatLog('enemy-attack', message, {
+      damage: finalDamage,
+      isCritical: attackResult.isCritical,
+      defenderHp: player.currentHp,
+      defenderMaxHp: player.maxHp
+    });
+  }
+
+  // Vérifier si le joueur est mort
+  if (player.currentHp <= 0) {
+    return finishCombat(false);
+  }
+
+  // Mettre à jour les cooldowns du joueur
+  updateCooldowns(player.skillState);
+
+  // Nouveau tour
+  combat.turn++;
+  combat.phase = 'player';
+  addCombatLog('turn', `--- Tour ${combat.turn} ---`);
+
+  return {
+    success: true,
+    continuesCombat: true,
+    enemyAttack: attackResult
+  };
+}
+
+/**
+ * Termine le combat
+ * @param {boolean} victory - Victoire du joueur
+ * @returns {Object} Résultat final
+ */
+function finishCombat(victory) {
+  const combat = currentInteractiveCombat;
+  combat.isFinished = true;
+  combat.victory = victory;
+
+  if (victory) {
+    addCombatLog('victory', `Victoire ! Vous avez vaincu ${combat.enemy.name} !`);
+  } else {
+    addCombatLog('defeat', `Défaite... ${combat.enemy.name} vous a vaincu.`);
+  }
+
+  // Calculer les récompenses si victoire
+  let rewards = null;
+  if (victory && combat.enemy.goldReward) {
+    const goldAmount = Helpers.randomInt(combat.enemy.goldReward.min, combat.enemy.goldReward.max);
+    rewards = {
+      xp: combat.enemy.xpReward || 0,
+      gold: goldAmount
+    };
+
+    addCombatLog('reward', `+${rewards.xp} XP, +${rewards.gold} Or`);
+  }
+
+  return {
+    success: true,
+    continuesCombat: false,
+    isFinished: true,
+    victory: victory,
+    log: combat.log,
+    turns: combat.turn,
+    playerHpRemaining: combat.player.currentHp,
+    enemyHpRemaining: combat.enemy.currentHp,
+    rewards: rewards
+  };
+}
+
+/**
+ * Récupère l'état actuel du combat
+ * @returns {Object} État du combat
+ */
+function getCurrentCombatState() {
+  return currentInteractiveCombat;
+}
+
+/**
+ * Réinitialise le combat interactif
+ */
+function resetInteractiveCombat() {
+  currentInteractiveCombat = null;
+}
+
 // Export pour utilisation globale
 window.createPlayerCombatant = createPlayerCombatant;
 window.createMonsterCombatant = createMonsterCombatant;
@@ -302,3 +579,8 @@ window.determineInitiative = determineInitiative;
 window.executeCombat = executeCombat;
 window.simulateCombat = simulateCombat;
 window.prepareCombatAnimation = prepareCombatAnimation;
+window.initInteractiveCombat = initInteractiveCombat;
+window.executePlayerAction = executePlayerAction;
+window.executeEnemyTurn = executeEnemyTurn;
+window.getCurrentCombatState = getCurrentCombatState;
+window.resetInteractiveCombat = resetInteractiveCombat;

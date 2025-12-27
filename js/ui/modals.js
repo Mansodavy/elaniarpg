@@ -102,9 +102,10 @@ function showItemModal(item, options = {}) {
  * Affiche la modal de combat
  * @param {Object} playerCombatant - Combattant joueur
  * @param {Object} enemyCombatant - Combattant ennemi
- * @param {Object} combatResult - Résultat du combat
+ * @param {Object} combatResult - Résultat du combat (null pour combat interactif)
+ * @param {boolean} interactive - Mode interactif
  */
-function showCombatModal(playerCombatant, enemyCombatant, combatResult) {
+function showCombatModal(playerCombatant, enemyCombatant, combatResult, interactive = false) {
   const modal = document.getElementById('combat-modal');
 
   // Infos des combattants
@@ -129,18 +130,207 @@ function showCombatModal(playerCombatant, enemyCombatant, combatResult) {
 
   openModal('combat-modal');
 
-  // Stocker les données pour l'animation
-  window.currentCombat = {
-    player: playerCombatant,
-    enemy: enemyCombatant,
-    result: combatResult,
-    animationIndex: 0
-  };
+  if (interactive) {
+    // Mode combat interactif
+    window.isInteractiveCombat = true;
+    initInteractiveCombat(playerCombatant, enemyCombatant);
+    renderCombatUI();
+  } else {
+    // Mode animation (combat déjà résolu)
+    window.isInteractiveCombat = false;
+    window.currentCombat = {
+      player: playerCombatant,
+      enemy: enemyCombatant,
+      result: combatResult,
+      animationIndex: 0
+    };
 
-  // Lancer l'animation automatiquement après un court délai
-  setTimeout(() => {
-    animateCombat();
-  }, 500);
+    // Lancer l'animation automatiquement après un court délai
+    setTimeout(() => {
+      animateCombat();
+    }, 500);
+  }
+}
+
+/**
+ * Affiche l'interface de combat interactif
+ */
+function renderCombatUI() {
+  const combat = getCurrentCombatState();
+  if (!combat) return;
+
+  const actionsDiv = document.getElementById('combat-actions');
+
+  // Mettre à jour les barres de vie
+  updateCombatBars(combat);
+
+  // Afficher le log
+  renderCombatLog(combat.log);
+
+  // Si le combat est fini
+  if (combat.isFinished) {
+    showCombatResult({
+      victory: combat.victory,
+      playerHpRemaining: combat.player.currentHp,
+      enemyHpRemaining: combat.enemy.currentHp,
+      rewards: combat.options.rewards
+    });
+    return;
+  }
+
+  // Si c'est le tour de l'ennemi, exécuter automatiquement
+  if (combat.phase === 'enemy') {
+    actionsDiv.innerHTML = `<div class="enemy-turn-indicator">Tour de l'ennemi...</div>`;
+    setTimeout(() => {
+      const result = executeEnemyTurn();
+      renderCombatUI();
+    }, 1000);
+    return;
+  }
+
+  // Afficher les compétences du joueur
+  renderSkillButtons(combat.player.skillState);
+}
+
+/**
+ * Met à jour les barres de vie
+ * @param {Object} combat - État du combat
+ */
+function updateCombatBars(combat) {
+  const playerPercent = (combat.player.currentHp / combat.player.maxHp) * 100;
+  const enemyPercent = (combat.enemy.currentHp / combat.enemy.maxHp) * 100;
+
+  document.getElementById('combat-player-hp-fill').style.width = `${playerPercent}%`;
+  document.getElementById('combat-player-hp-text').textContent = `${combat.player.currentHp}/${combat.player.maxHp}`;
+
+  document.getElementById('combat-enemy-hp-fill').style.width = `${enemyPercent}%`;
+  document.getElementById('combat-enemy-hp-text').textContent = `${combat.enemy.currentHp}/${combat.enemy.maxHp}`;
+}
+
+/**
+ * Affiche le log de combat
+ * @param {Array} log - Entrées du log
+ */
+function renderCombatLog(log) {
+  const logElement = document.getElementById('combat-log');
+
+  // Ne garder que les dernières entrées
+  const recentLog = log.slice(-10);
+
+  logElement.innerHTML = recentLog.map(entry => {
+    let className = 'combat-log-entry';
+
+    if (entry.type.includes('player')) {
+      className += ' player-action';
+    } else if (entry.type.includes('enemy')) {
+      className += ' enemy-action';
+    }
+
+    if (entry.isCritical) {
+      className += ' critical';
+    }
+
+    if (entry.type.includes('dodge')) {
+      className += ' dodge';
+    }
+
+    if (entry.type === 'turn') {
+      className += ' turn-marker';
+    }
+
+    return `<div class="${className}">${entry.message}</div>`;
+  }).join('');
+
+  logElement.scrollTop = logElement.scrollHeight;
+}
+
+/**
+ * Affiche les boutons de compétences
+ * @param {Object} skillState - État des compétences
+ */
+function renderSkillButtons(skillState) {
+  const actionsDiv = document.getElementById('combat-actions');
+
+  // Afficher la barre de mana
+  let html = `
+    <div class="combat-mana-bar">
+      <div class="mana-label">Mana: ${skillState.mana}/${skillState.maxMana}</div>
+      <div class="mana-progress">
+        <div class="mana-fill" style="width: ${(skillState.mana / skillState.maxMana) * 100}%"></div>
+      </div>
+    </div>
+    <div class="skill-buttons">
+  `;
+
+  skillState.skills.forEach(skill => {
+    const check = canUseSkill(skillState, skill.id);
+    const disabled = !check.canUse;
+    const disabledClass = disabled ? 'disabled' : '';
+
+    let cooldownText = '';
+    if (skill.currentCooldown > 0) {
+      cooldownText = `<span class="skill-cooldown">${skill.currentCooldown}</span>`;
+    }
+
+    let usesText = '';
+    if (skill.maxUses) {
+      usesText = `<span class="skill-uses">${skill.usesRemaining}/${skill.maxUses}</span>`;
+    }
+
+    html += `
+      <button class="skill-btn ${disabledClass}"
+              onclick="handleSkillClick('${skill.id}')"
+              ${disabled ? 'disabled' : ''}
+              title="${skill.description}${skill.manaCost > 0 ? ' (Coût: ' + skill.manaCost + ' mana)' : ''}">
+        <span class="skill-icon">${skill.icon}</span>
+        <span class="skill-name">${skill.name}</span>
+        ${cooldownText}
+        ${usesText}
+      </button>
+    `;
+  });
+
+  html += '</div>';
+
+  // Ajouter les effets actifs
+  if (skillState.activeEffects.length > 0) {
+    html += '<div class="active-effects">';
+    skillState.activeEffects.forEach(effect => {
+      let effectIcon = '';
+      let effectName = '';
+
+      switch (effect.type) {
+        case 'damageReduction':
+          effectIcon = '🛡️';
+          effectName = `Défense (${effect.remainingDuration})`;
+          break;
+        case 'damageBoost':
+          effectIcon = '💪';
+          effectName = `Rage (${effect.remainingDuration})`;
+          break;
+      }
+
+      html += `<div class="effect-badge">${effectIcon} ${effectName}</div>`;
+    });
+    html += '</div>';
+  }
+
+  actionsDiv.innerHTML = html;
+}
+
+/**
+ * Gère le clic sur une compétence
+ * @param {string} skillId - ID de la compétence
+ */
+function handleSkillClick(skillId) {
+  const result = executePlayerAction(skillId);
+
+  if (!result.success) {
+    showToast(result.message, 'error');
+    return;
+  }
+
+  renderCombatUI();
 }
 
 /**
@@ -262,6 +452,9 @@ function showCombatResult(result) {
 
   resultElement.innerHTML = html;
 
+  // Stocker le résultat pour la fermeture
+  window.combatFinalResult = result;
+
   document.getElementById('combat-actions').innerHTML = `
     <button class="btn btn-primary" onclick="closeCombatModal()">Continuer</button>
   `;
@@ -274,7 +467,15 @@ function showCombatResult(result) {
  */
 function closeCombatModal() {
   closeModal('combat-modal');
+
+  // Si c'était un combat interactif, traiter les récompenses
+  if (window.isInteractiveCombat && window.combatFinalResult) {
+    onInteractiveCombatEnd(window.combatFinalResult);
+    window.combatFinalResult = null;
+  }
+
   window.currentCombat = null;
+  window.isInteractiveCombat = false;
 
   // Rafraîchir l'écran actuel
   refreshScreen(currentScreen);
@@ -328,3 +529,5 @@ window.closeCombatModal = closeCombatModal;
 window.showConfirmModal = showConfirmModal;
 window.confirmAction = confirmAction;
 window.cancelAction = cancelAction;
+window.renderCombatUI = renderCombatUI;
+window.handleSkillClick = handleSkillClick;

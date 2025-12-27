@@ -227,48 +227,182 @@ function handleStartExpedition(zoneId) {
 }
 
 /**
- * Termine une expédition
+ * Termine une expédition et lance le combat interactif
  */
 function handleExpeditionComplete() {
-  const result = completeExpedition();
+  const expedition = getActiveExpedition();
 
-  if (!result.success) {
-    showToast(result.message, 'error');
+  if (!expedition) {
+    showToast('Aucune expédition en cours', 'error');
     return;
   }
 
-  // Préparer les combattants pour l'affichage depuis le résultat
-  const playerCombatant = {
-    name: result.player.name,
-    level: result.player.level,
-    maxHp: result.player.maxHp
-  };
-
-  const enemyCombatant = {
-    name: result.monster.name,
-    icon: result.monster.icon,
-    level: result.monster.level,
-    maxHp: result.monster.maxHp
-  };
-
-  // Afficher le résultat (l'animation se lance automatiquement)
-  showCombatModal(playerCombatant, enemyCombatant, result);
-
-  // Gérer le level up
-  if (result.levelUp) {
-    setTimeout(() => {
-      animateLevelUp(result.levelUp.newLevel);
-    }, 500);
+  if (!expedition.completed) {
+    showToast('L\'expédition n\'est pas encore terminée', 'error');
+    return;
   }
 
-  // Animer le loot
-  if (result.rewards.loot && result.rewards.loot.length > 0) {
-    setTimeout(() => {
-      result.rewards.loot.forEach((item, index) => {
-        setTimeout(() => animateLootDrop(item), index * 500);
-      });
-    }, 1000);
+  // Préparer le combat
+  const combatData = prepareExpeditionCombat(expedition);
+
+  if (!combatData.success) {
+    showToast(combatData.message, 'error');
+    return;
   }
+
+  // Stocker les données pour après le combat
+  window.pendingExpedition = {
+    zone: combatData.zone,
+    isBoss: combatData.isBoss,
+    monster: combatData.monster
+  };
+
+  // Lancer le combat interactif
+  showCombatModal(combatData.player, combatData.enemy, null, true);
+}
+
+/**
+ * Prépare les données pour le combat d'expédition
+ * @param {Object} expedition - L'expédition
+ * @returns {Object} Données du combat
+ */
+function prepareExpeditionCombat(expedition) {
+  const zone = ZONES[expedition.zoneId];
+  const character = loadCharacter();
+
+  // Déterminer si c'est un boss
+  const isBoss = Helpers.checkChance(zone.bossChance * 100);
+
+  // Générer le monstre
+  const monsterLevel = calculateMonsterLevel(zone, character.level);
+  let monster;
+
+  if (isBoss) {
+    monster = getZoneBoss(expedition.zoneId, zone.levelMax);
+  } else {
+    monster = getRandomMonster(expedition.zoneId, monsterLevel);
+  }
+
+  if (!monster) {
+    Storage.saveExpedition(null);
+    return { success: false, message: 'Erreur: aucun monstre trouvé' };
+  }
+
+  // Préparer les combattants
+  const playerCombatant = createPlayerCombatant(character);
+  const monsterCombatant = createMonsterCombatant(monster);
+
+  // Ajouter les récompenses au monstre pour le combat interactif
+  monsterCombatant.goldReward = monster.goldReward;
+  monsterCombatant.xpReward = monster.xpReward;
+
+  return {
+    success: true,
+    player: playerCombatant,
+    enemy: monsterCombatant,
+    zone: zone,
+    isBoss: isBoss,
+    monster: monster
+  };
+}
+
+/**
+ * Appelée quand le combat interactif se termine
+ * @param {Object} result - Résultat du combat
+ */
+function onInteractiveCombatEnd(result) {
+  const pendingExp = window.pendingExpedition;
+  const pendingArena = window.pendingArenaFight;
+
+  if (pendingExp) {
+    // C'était un combat d'expédition
+    const character = loadCharacter();
+
+    if (result.victory) {
+      // XP et Or
+      if (result.rewards) {
+        const xpResult = addXp(character, result.rewards.xp);
+        addGold(character, result.rewards.gold);
+
+        if (xpResult.leveledUp) {
+          setTimeout(() => {
+            animateLevelUp(xpResult.newLevel);
+          }, 500);
+        }
+      }
+
+      // Générer le loot
+      const luckBonus = character.derivedStats.luck || 0;
+      let loot = [];
+
+      if (pendingExp.isBoss) {
+        const bossLoot = generateBossLoot(pendingExp.zone, character.level);
+        if (bossLoot) {
+          const added = addToInventory(bossLoot);
+          if (added) {
+            loot.push(bossLoot);
+          }
+        }
+      } else {
+        const generatedLoot = generateExpeditionLoot(pendingExp.zone, character.level, luckBonus);
+        for (const item of generatedLoot) {
+          const added = addToInventory(item);
+          if (added) {
+            loot.push(item);
+          }
+        }
+      }
+
+      // Animer le loot
+      if (loot.length > 0) {
+        setTimeout(() => {
+          loot.forEach((item, index) => {
+            setTimeout(() => animateLootDrop(item), index * 500);
+          });
+        }, 1000);
+      }
+
+      // Soigner partiellement
+      healCharacter(character, Math.floor(character.derivedStats.maxHp * 0.3));
+    } else {
+      // Défaite - XP réduit
+      const reducedXp = Math.floor((pendingExp.monster.xpReward || 50) * 0.3);
+      addXp(character, reducedXp);
+      healCharacter(character, -1);
+    }
+
+    // Nettoyer
+    Storage.saveExpedition(null);
+    window.pendingExpedition = null;
+  } else if (pendingArena) {
+    // C'était un combat d'arène
+    const arena = getArenaData();
+    const character = loadCharacter();
+
+    // Appliquer les résultats de l'arène
+    const pointsChange = result.victory ?
+      ARENA_CONFIG.pointsWin :
+      ARENA_CONFIG.pointsLoss;
+
+    arena.points = Math.max(0, arena.points + pointsChange);
+    arena.fightsToday--;
+    Storage.saveArena(arena);
+
+    // Soigner le joueur après le combat
+    healCharacter(character, -1);
+
+    // Afficher le changement de points
+    if (result.victory) {
+      showToast(`+${ARENA_CONFIG.pointsWin} points d'arène !`, 'success');
+    } else {
+      showToast(`${ARENA_CONFIG.pointsLoss} points d'arène`, 'error');
+    }
+
+    window.pendingArenaFight = null;
+  }
+
+  // Réinitialiser le combat
+  resetInteractiveCombat();
 }
 
 /**
@@ -284,10 +418,9 @@ function handleArenaFight(opponentId) {
     return;
   }
 
-  const result = startArenaFight(opponentId);
-
-  if (!result.success) {
-    showToast(result.message, 'error');
+  // Vérifier les combats restants
+  if (arena.fightsToday <= 0) {
+    showToast('Plus de combats disponibles aujourd\'hui', 'error');
     return;
   }
 
@@ -295,16 +428,21 @@ function handleArenaFight(opponentId) {
   const character = loadCharacter();
   const playerCombatant = createPlayerCombatant(character);
 
-  const displayResult = {
-    ...result,
-    rewards: {
-      xp: 0,
-      gold: 0
-    }
+  // Créer le combattant ennemi
+  const opponentCombatant = {
+    ...opponent,
+    isPlayer: false,
+    goldReward: { min: 0, max: 0 },
+    xpReward: 0
   };
 
-  // Afficher le résultat (l'animation se lance automatiquement)
-  showCombatModal(playerCombatant, opponent, displayResult);
+  // Stocker les données pour après le combat
+  window.pendingArenaFight = {
+    opponentId: opponentId
+  };
+
+  // Lancer le combat interactif
+  showCombatModal(playerCombatant, opponentCombatant, null, true);
 }
 
 /**
@@ -333,6 +471,8 @@ window.handleStartExpedition = handleStartExpedition;
 window.handleExpeditionComplete = handleExpeditionComplete;
 window.handleArenaFight = handleArenaFight;
 window.openSettings = openSettings;
+window.onInteractiveCombatEnd = onInteractiveCombatEnd;
+window.prepareExpeditionCombat = prepareExpeditionCombat;
 
 // Initialisation au chargement
 document.addEventListener('DOMContentLoaded', initGame);
