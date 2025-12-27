@@ -246,7 +246,10 @@ function simulateCombat(player, enemy) {
 function prepareCombatAnimation(combatResult) {
   const actions = [];
 
-  for (const entry of combatResult.log) {
+  // Support both 'log' (direct combat) and 'combatLog' (expedition result)
+  const log = combatResult.log || combatResult.combatLog || [];
+
+  for (const entry of log) {
     switch (entry.type) {
       case 'player-attack':
       case 'enemy-attack':

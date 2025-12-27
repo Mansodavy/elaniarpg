@@ -119,7 +119,14 @@ function completeExpedition() {
   const combatResult = executeCombat(playerCombatant, monsterCombatant);
 
   // Appliquer les résultats
-  const result = processExpeditionResult(character, zone, combatResult, isBoss);
+  const result = processExpeditionResult(character, zone, combatResult, isBoss, monster);
+
+  // Ajouter les infos du joueur pour l'affichage
+  result.player = {
+    name: character.name,
+    level: character.level,
+    maxHp: character.derivedStats.maxHp
+  };
 
   // Nettoyer l'expédition
   Storage.saveExpedition(null);
@@ -135,12 +142,20 @@ function completeExpedition() {
  * @param {boolean} isBoss - Si c'était un boss
  * @returns {Object} Résultat final
  */
-function processExpeditionResult(character, zone, combatResult, isBoss) {
+function processExpeditionResult(character, zone, combatResult, isBoss, monster) {
   const result = {
     success: true,
     victory: combatResult.victory,
     combatLog: combatResult.log,
     turns: combatResult.turns,
+    playerHpRemaining: combatResult.playerHpRemaining,
+    enemyHpRemaining: combatResult.enemyHpRemaining,
+    monster: {
+      name: monster.name,
+      icon: monster.icon,
+      level: monster.level,
+      maxHp: monster.derivedStats.maxHp
+    },
     rewards: {
       xp: 0,
       gold: 0,

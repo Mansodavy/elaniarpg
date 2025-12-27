@@ -237,30 +237,22 @@ async function handleExpeditionComplete() {
     return;
   }
 
-  // Préparer les combattants pour l'affichage
-  const character = loadCharacter();
-  const zone = ZONES[Storage.loadExpedition()?.zoneId || 'branwald'];
-
-  // Créer les combattants pour l'affichage
-  const playerCombatant = createPlayerCombatant(character);
-
-  // Récupérer les infos du monstre depuis le log
-  const firstEnemyAction = result.combatLog.find(e =>
-    e.type === 'enemy-attack' || e.message?.includes('ennemi')
-  );
+  // Préparer les combattants pour l'affichage depuis le résultat
+  const playerCombatant = {
+    name: result.player.name,
+    level: result.player.level,
+    maxHp: result.player.maxHp
+  };
 
   const enemyCombatant = {
-    name: result.combatLog[0]?.message?.split(' ')[0] || 'Monstre',
-    icon: '👹',
-    level: character.level,
-    maxHp: 100
+    name: result.monster.name,
+    icon: result.monster.icon,
+    level: result.monster.level,
+    maxHp: result.monster.maxHp
   };
 
   // Afficher le résultat
   showCombatModal(playerCombatant, enemyCombatant, result);
-
-  // Ajouter le loot au résultat pour l'affichage
-  result.rewards = result.rewards || {};
 
   await animateCombat();
 

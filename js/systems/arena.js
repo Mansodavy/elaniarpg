@@ -223,6 +223,8 @@ function startArenaFight(opponentId) {
     victory: combatResult.victory,
     combatLog: combatResult.log,
     turns: combatResult.turns,
+    playerHpRemaining: combatResult.playerHpRemaining,
+    enemyHpRemaining: combatResult.enemyHpRemaining,
     pointsChange,
     newPoints: arena.points,
     fightsRemaining: arena.fightsToday
