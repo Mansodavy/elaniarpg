@@ -229,7 +229,7 @@ function handleStartExpedition(zoneId) {
 /**
  * Termine une expédition
  */
-async function handleExpeditionComplete() {
+function handleExpeditionComplete() {
   const result = completeExpedition();
 
   if (!result.success) {
@@ -251,10 +251,8 @@ async function handleExpeditionComplete() {
     maxHp: result.monster.maxHp
   };
 
-  // Afficher le résultat
+  // Afficher le résultat (l'animation se lance automatiquement)
   showCombatModal(playerCombatant, enemyCombatant, result);
-
-  await animateCombat();
 
   // Gérer le level up
   if (result.levelUp) {
@@ -277,7 +275,7 @@ async function handleExpeditionComplete() {
  * Lance un combat d'arène
  * @param {string} opponentId - ID de l'adversaire
  */
-async function handleArenaFight(opponentId) {
+function handleArenaFight(opponentId) {
   const arena = getArenaData();
   const opponent = arena.opponents.find(o => o.id === opponentId);
 
@@ -305,14 +303,8 @@ async function handleArenaFight(opponentId) {
     }
   };
 
+  // Afficher le résultat (l'animation se lance automatiquement)
   showCombatModal(playerCombatant, opponent, displayResult);
-  await animateCombat();
-
-  // Afficher le changement de points
-  setTimeout(() => {
-    const pointsText = result.pointsChange > 0 ? `+${result.pointsChange}` : result.pointsChange;
-    showToast(`Points d'arène: ${pointsText}`, result.victory ? 'success' : 'warning');
-  }, 500);
 }
 
 /**

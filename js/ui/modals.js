@@ -136,6 +136,11 @@ function showCombatModal(playerCombatant, enemyCombatant, combatResult) {
     result: combatResult,
     animationIndex: 0
   };
+
+  // Lancer l'animation automatiquement après un court délai
+  setTimeout(() => {
+    animateCombat();
+  }, 500);
 }
 
 /**
