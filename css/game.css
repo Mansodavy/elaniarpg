@@ -1174,6 +1174,212 @@
 }
 
 /* ==============================================
+   ANIMATIONS DE COMBAT DYNAMIQUES
+   ============================================== */
+
+/* Shake quand touché */
+@keyframes combatShake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+  20%, 40%, 60%, 80% { transform: translateX(8px); }
+}
+
+.combatant.hit .combatant-avatar {
+  animation: combatShake 0.4s ease-out;
+}
+
+/* Flash de dégâts */
+@keyframes damageFlash {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(2) saturate(0.5); }
+}
+
+.combatant.damaged .combatant-avatar {
+  animation: damageFlash 0.3s ease-out;
+}
+
+/* Glow d'attaque */
+@keyframes attackGlow {
+  0% { box-shadow: 0 0 30px rgba(40, 167, 69, 0.4), 0 8px 32px rgba(0, 0, 0, 0.4); }
+  50% { box-shadow: 0 0 50px rgba(255, 200, 50, 0.8), 0 0 80px rgba(255, 200, 50, 0.4); }
+  100% { box-shadow: 0 0 30px rgba(40, 167, 69, 0.4), 0 8px 32px rgba(0, 0, 0, 0.4); }
+}
+
+.combatant.attacking .combatant-avatar {
+  animation: attackGlow 0.5s ease-out;
+}
+
+/* Slash effect */
+@keyframes slashEffect {
+  0% {
+    opacity: 0;
+    transform: rotate(-45deg) scale(0);
+  }
+  30% {
+    opacity: 1;
+    transform: rotate(-45deg) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(-45deg) scale(1.5);
+  }
+}
+
+.slash-effect {
+  position: absolute;
+  width: 80px;
+  height: 10px;
+  background: linear-gradient(90deg, transparent, #fff, #ffd700, #fff, transparent);
+  border-radius: 5px;
+  pointer-events: none;
+  z-index: 50;
+  animation: slashEffect 0.3s ease-out forwards;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+}
+
+/* Nombre de dégâts flottant */
+.damage-number {
+  position: absolute;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: bold;
+  pointer-events: none;
+  z-index: 100;
+  animation: floatUp 0.8s ease-out forwards;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8), 0 0 10px currentColor;
+}
+
+.damage-number.damage {
+  color: #ff4444;
+}
+
+.damage-number.critical {
+  color: #ffd700;
+  font-size: 2.8rem;
+  animation: floatUpCrit 0.8s ease-out forwards;
+}
+
+.damage-number.heal {
+  color: #44ff44;
+}
+
+.damage-number.block {
+  color: #4488ff;
+  font-size: 1.5rem;
+}
+
+.damage-number.miss {
+  color: #888;
+  font-style: italic;
+}
+
+@keyframes floatUp {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  20% {
+    transform: translateY(-15px) scale(1.3);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-50px) scale(0.8);
+  }
+}
+
+@keyframes floatUpCrit {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(0.5);
+  }
+  20% {
+    transform: translateY(-10px) scale(1.6);
+  }
+  40% {
+    transform: translateY(-20px) scale(1.3);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-60px) scale(0.8);
+  }
+}
+
+/* Animation de soin */
+@keyframes healPulse {
+  0%, 100% { box-shadow: 0 0 30px rgba(40, 167, 69, 0.4); }
+  50% { box-shadow: 0 0 60px rgba(100, 255, 100, 0.8), 0 0 100px rgba(100, 255, 100, 0.4); }
+}
+
+.combatant.healing .combatant-avatar {
+  animation: healPulse 0.5s ease-out;
+}
+
+/* Particules de soin */
+@keyframes healParticle {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-40px) scale(0.5);
+  }
+}
+
+.heal-particle {
+  position: absolute;
+  font-size: 1.5rem;
+  pointer-events: none;
+  animation: healParticle 0.8s ease-out forwards;
+}
+
+/* Animation de buff */
+@keyframes buffGlow {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.5) hue-rotate(20deg); }
+}
+
+.combatant.buffed .combatant-avatar {
+  animation: buffGlow 0.5s ease-out;
+}
+
+/* Barre de vie qui pulse quand basse */
+.combatant-health.low .combatant-health-fill {
+  animation: lowHpPulse 1s ease-in-out infinite;
+}
+
+@keyframes lowHpPulse {
+  0%, 100% { opacity: 1; background: linear-gradient(180deg, #e74c3c 0%, #c0392b 50%, #a93226 100%); }
+  50% { opacity: 0.7; background: linear-gradient(180deg, #ff6b6b 0%, #e74c3c 50%, #c0392b 100%); }
+}
+
+/* Transition fluide des barres de vie */
+.combatant-health-fill {
+  transition: width 0.3s ease-out;
+}
+
+/* Animation du log plus rapide */
+.combat-log-entry {
+  animation: logSlideIn 0.15s ease;
+}
+
+/* Bouton de compétence pressé */
+.skill-btn:active:not(.disabled) {
+  transform: scale(0.95);
+  transition: transform 0.1s;
+}
+
+.skill-btn.used {
+  animation: skillUsed 0.3s ease-out;
+}
+
+@keyframes skillUsed {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.9); background: rgba(212, 175, 55, 0.3); }
+  100% { transform: scale(1); }
+}
+
+/* ==============================================
    RESPONSIVE
    ============================================== */
 

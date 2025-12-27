@@ -182,9 +182,26 @@ function renderCombatUI() {
   if (combat.phase === 'enemy') {
     actionsDiv.innerHTML = `<div class="enemy-turn-indicator">Tour de l'ennemi...</div>`;
     setTimeout(() => {
+      const prevPlayerHp = combat.player.currentHp;
       const result = executeEnemyTurn();
-      renderCombatUI();
-    }, 1000);
+
+      // Animer l'attaque ennemie
+      if (result.success && result.continuesCombat) {
+        playCombatAnimation('enemy', 'attack');
+        setTimeout(() => {
+          const damage = prevPlayerHp - getCurrentCombatState().player.currentHp;
+          if (damage > 0) {
+            playCombatAnimation('player', 'hit');
+            showDamageNumber('player', damage, result.enemyAttack?.isCritical);
+          } else {
+            showDamageNumber('player', 'Esquive!', false, 'miss');
+          }
+          renderCombatUI();
+        }, 200);
+      } else {
+        renderCombatUI();
+      }
+    }, 600);
     return;
   }
 
@@ -200,11 +217,29 @@ function updateCombatBars(combat) {
   const playerPercent = (combat.player.currentHp / combat.player.maxHp) * 100;
   const enemyPercent = (combat.enemy.currentHp / combat.enemy.maxHp) * 100;
 
-  document.getElementById('combat-player-hp-fill').style.width = `${playerPercent}%`;
+  const playerHpBar = document.getElementById('combat-player-hp-fill');
+  const enemyHpBar = document.getElementById('combat-enemy-hp-fill');
+  const playerHealth = playerHpBar.parentElement;
+  const enemyHealth = enemyHpBar.parentElement;
+
+  playerHpBar.style.width = `${playerPercent}%`;
   document.getElementById('combat-player-hp-text').textContent = `${combat.player.currentHp}/${combat.player.maxHp}`;
 
-  document.getElementById('combat-enemy-hp-fill').style.width = `${enemyPercent}%`;
+  enemyHpBar.style.width = `${enemyPercent}%`;
   document.getElementById('combat-enemy-hp-text').textContent = `${combat.enemy.currentHp}/${combat.enemy.maxHp}`;
+
+  // Ajouter effet de pulsation si HP bas
+  if (playerPercent <= 25) {
+    playerHealth.classList.add('low');
+  } else {
+    playerHealth.classList.remove('low');
+  }
+
+  if (enemyPercent <= 25) {
+    enemyHealth.classList.add('low');
+  } else {
+    enemyHealth.classList.remove('low');
+  }
 }
 
 /**
@@ -323,6 +358,10 @@ function renderSkillButtons(skillState) {
  * @param {string} skillId - ID de la compétence
  */
 function handleSkillClick(skillId) {
+  const combat = getCurrentCombatState();
+  const prevEnemyHp = combat.enemy.currentHp;
+  const prevPlayerHp = combat.player.currentHp;
+
   const result = executePlayerAction(skillId);
 
   if (!result.success) {
@@ -330,7 +369,177 @@ function handleSkillClick(skillId) {
     return;
   }
 
-  renderCombatUI();
+  // Animer selon le type de compétence
+  const skill = result.playerAction?.skill;
+
+  if (skill) {
+    if (skill.type === 'damage' || skill.type === 'magic') {
+      // Animation d'attaque
+      playCombatAnimation('player', 'attack');
+      setTimeout(() => {
+        const damage = prevEnemyHp - getCurrentCombatState().enemy.currentHp;
+        if (damage > 0) {
+          playCombatAnimation('enemy', 'hit');
+          showDamageNumber('enemy', damage, result.playerAction.damage >= prevEnemyHp * 0.3);
+          if (skill.type === 'magic') {
+            showSpellEffect('enemy', skill.id);
+          }
+        }
+        updateCombatBars(getCurrentCombatState());
+        renderCombatLog(getCurrentCombatState().log);
+        continueAfterPlayerAction();
+      }, 250);
+      return;
+    } else if (skill.type === 'heal' || skill.type === 'consumable') {
+      // Animation de soin
+      playCombatAnimation('player', 'heal');
+      const healing = getCurrentCombatState().player.currentHp - prevPlayerHp;
+      showDamageNumber('player', `+${healing}`, false, 'heal');
+      showHealParticles('player');
+    } else if (skill.type === 'buff') {
+      // Animation de buff
+      playCombatAnimation('player', 'buff');
+    }
+  }
+
+  updateCombatBars(getCurrentCombatState());
+  renderCombatLog(getCurrentCombatState().log);
+  continueAfterPlayerAction();
+}
+
+/**
+ * Continue après l'action du joueur
+ */
+function continueAfterPlayerAction() {
+  const combat = getCurrentCombatState();
+
+  if (combat.isFinished) {
+    showCombatResult({
+      victory: combat.victory,
+      playerHpRemaining: combat.player.currentHp,
+      enemyHpRemaining: combat.enemy.currentHp,
+      rewards: combat.options?.rewards
+    });
+    return;
+  }
+
+  // Passer au tour ennemi après un court délai
+  setTimeout(() => {
+    renderCombatUI();
+  }, 400);
+}
+
+/**
+ * Joue une animation de combat
+ * @param {string} target - 'player' ou 'enemy'
+ * @param {string} animType - Type d'animation
+ */
+function playCombatAnimation(target, animType) {
+  const combatant = document.querySelector(`.combatant.${target}`);
+  if (!combatant) return;
+
+  // Retirer les classes d'animation précédentes
+  combatant.classList.remove('hit', 'attacking', 'healing', 'buffed', 'damaged');
+
+  // Ajouter la nouvelle classe
+  combatant.classList.add(animType === 'attack' ? 'attacking' : animType);
+
+  // Retirer après l'animation
+  setTimeout(() => {
+    combatant.classList.remove('hit', 'attacking', 'healing', 'buffed', 'damaged');
+  }, 500);
+}
+
+/**
+ * Affiche un nombre de dégâts flottant
+ * @param {string} target - 'player' ou 'enemy'
+ * @param {number|string} value - Valeur à afficher
+ * @param {boolean} isCritical - Si c'est un critique
+ * @param {string} type - Type (damage, heal, miss, block)
+ */
+function showDamageNumber(target, value, isCritical = false, type = 'damage') {
+  const combatant = document.querySelector(`.combatant.${target}`);
+  if (!combatant) return;
+
+  const avatar = combatant.querySelector('.combatant-avatar');
+  const rect = avatar.getBoundingClientRect();
+  const containerRect = combatant.getBoundingClientRect();
+
+  const dmgNum = document.createElement('div');
+  dmgNum.className = `damage-number ${type} ${isCritical ? 'critical' : ''}`;
+  dmgNum.textContent = isCritical ? `${value}!` : value;
+
+  // Position relative au combattant
+  dmgNum.style.left = `${(rect.left - containerRect.left) + rect.width / 2}px`;
+  dmgNum.style.top = `${(rect.top - containerRect.top) + rect.height / 3}px`;
+  dmgNum.style.transform = 'translateX(-50%)';
+
+  combatant.style.position = 'relative';
+  combatant.appendChild(dmgNum);
+
+  // Supprimer après l'animation
+  setTimeout(() => {
+    dmgNum.remove();
+  }, 800);
+}
+
+/**
+ * Affiche un effet de sort
+ * @param {string} target - 'player' ou 'enemy'
+ * @param {string} spellId - ID du sort
+ */
+function showSpellEffect(target, spellId) {
+  const combatant = document.querySelector(`.combatant.${target}`);
+  if (!combatant) return;
+
+  const avatar = combatant.querySelector('.combatant-avatar');
+
+  let emoji = '';
+  switch (spellId) {
+    case 'fireball': emoji = '🔥'; break;
+    case 'iceSpear': emoji = '❄️'; break;
+    default: emoji = '✨';
+  }
+
+  // Créer plusieurs particules
+  for (let i = 0; i < 5; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'heal-particle';
+    particle.textContent = emoji;
+    particle.style.left = `${50 + (Math.random() - 0.5) * 60}%`;
+    particle.style.top = `${30 + Math.random() * 40}%`;
+    particle.style.animationDelay = `${i * 0.1}s`;
+
+    combatant.style.position = 'relative';
+    combatant.appendChild(particle);
+
+    setTimeout(() => particle.remove(), 800);
+  }
+}
+
+/**
+ * Affiche des particules de soin
+ * @param {string} target - 'player' ou 'enemy'
+ */
+function showHealParticles(target) {
+  const combatant = document.querySelector(`.combatant.${target}`);
+  if (!combatant) return;
+
+  const emojis = ['💚', '✨', '💫', '+'];
+
+  for (let i = 0; i < 6; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'heal-particle';
+    particle.textContent = emojis[i % emojis.length];
+    particle.style.left = `${30 + Math.random() * 40}%`;
+    particle.style.top = `${40 + Math.random() * 30}%`;
+    particle.style.animationDelay = `${i * 0.08}s`;
+
+    combatant.style.position = 'relative';
+    combatant.appendChild(particle);
+
+    setTimeout(() => particle.remove(), 800);
+  }
 }
 
 /**
@@ -531,3 +740,7 @@ window.confirmAction = confirmAction;
 window.cancelAction = cancelAction;
 window.renderCombatUI = renderCombatUI;
 window.handleSkillClick = handleSkillClick;
+window.playCombatAnimation = playCombatAnimation;
+window.showDamageNumber = showDamageNumber;
+window.showSpellEffect = showSpellEffect;
+window.showHealParticles = showHealParticles;
